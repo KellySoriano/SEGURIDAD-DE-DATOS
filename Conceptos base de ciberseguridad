@@ -1,0 +1,104 @@
+# Bitácora — Conceptos base de ciberseguridad
+
+## CIA Triad (Confidentiality, Integrity, Availability)
+La **tríada CIA** es un modelo clásico para definir los **objetivos de seguridad** de la información:
+
+- **Confidencialidad (Confidentiality):** que la info solo la vea quien debe verla.  
+  **Ejemplos:** permisos, cifrado, control de acceso, clasificación de datos.
+- **Integridad (Integrity):** que la info no sea alterada sin autorización y se mantenga correcta.  
+  **Ejemplos:** hashes, firmas digitales, control de cambios, bitácoras (logs).
+- **Disponibilidad (Availability):** que la info/sistema esté accesible cuando se necesita.  
+  **Ejemplos:** redundancia, backups, alta disponibilidad, mitigación DDoS.
+
+> Si falla una, la seguridad se rompe: puedes tener datos súper cifrados, pero si el sistema está caído 24/7… adiós.
+
+---
+
+## Usability Triangle (Triángulo de usabilidad en seguridad)
+En seguridad, hay un “triángulo” (trade-off) donde normalmente no puedes maximizar todo a la vez:
+
+- **Seguridad:** más controles, menos riesgo… pero más fricción.
+- **Usabilidad:** fácil para el usuario… pero si te pasas, abres puertas.
+- **Funcionalidad/Productividad:** que el trabajo fluya y el sistema haga lo que debe.
+
+**Idea clave:** mientras más estricta la seguridad, suele bajar la usabilidad (y viceversa).  
+**Ejemplo real:** contraseñas larguísimas + cambios cada semana = usuarios pegando contraseñas en un post-it (plot twist: empeora la seguridad).
+
+---
+
+## Riesgo (Risk)
+El **riesgo** es la posibilidad de que ocurra un evento negativo que afecte a un activo.
+
+Una forma común de expresarlo:
+- **Riesgo ≈ Probabilidad × Impacto**
+
+En ciberseguridad, el riesgo aparece cuando:
+- existe una **amenaza** (algo que puede causar daño),
+- que puede explotar una **vulnerabilidad** (debilidad),
+- afectando un **activo** (datos, sistema, reputación, dinero).
+
+---
+
+## MFA (Multi-Factor Authentication)
+**MFA** es autenticación usando **más de un factor** para comprobar identidad.  
+Factores típicos:
+
+1. **Algo que sabes:** contraseña, PIN.
+2. **Algo que tienes:** app (TOTP), token, llave FIDO2, SMS (menos recomendado).
+3. **Algo que eres:** huella, rostro, biometría.
+
+**Por qué sirve:** aunque te roben la contraseña, aún falta el otro factor.  
+**Buenas prácticas:**
+- Mejor **app TOTP** o **llaves FIDO2/WebAuthn** que SMS (SMS es vulnerable a SIM swapping).
+- Activar MFA especialmente en: correo, GitHub, bancos, cuentas con acceso a datos sensibles.
+
+---
+
+## Vulnerabilidad
+Una **vulnerabilidad** es una **debilidad** que puede ser explotada.
+
+**Tipos comunes:**
+- **Técnicas:** software desactualizado, mala configuración, fallos de código.
+- **Humanas/proceso:** contraseñas débiles, phishing, permisos excesivos.
+- **Infraestructura:** redes mal segmentadas, puertos expuestos sin necesidad.
+
+**Ejemplo:** un servidor con panel de administración expuesto y contraseña simple.
+
+---
+
+## Amenaza (Threat)
+Una **amenaza** es cualquier cosa con **capacidad** de causar daño o aprovechar una vulnerabilidad.
+
+**Ejemplos:**
+- **Actores:** ciberdelincuentes, insiders (empleados), hacktivistas.
+- **Eventos:** fallos eléctricos, incendios, pérdida de dispositivo.
+- **Tácticas:** phishing, ransomware, fuerza bruta, ingeniería social.
+
+> Amenaza = “quién/qué podría pegarte” (no siempre es una persona).
+
+---
+
+## Impacto (Impact)
+El **impacto** es qué tan grave es el daño si el riesgo se materializa.
+
+Puede medirse en:
+- **Financiero:** multas, pérdidas, fraudes, caída de ventas.
+- **Operativo:** sistemas caídos, pérdida de productividad.
+- **Legal/compliance:** sanciones por datos personales.
+- **Reputacional:** pérdida de confianza.
+- **Seguridad de personas:** casos críticos (salud, infraestructura).
+
+**Ejemplo:** filtración de datos de clientes → multas + pérdida de clientes + daño a marca.
+
+---
+
+## Relación rápida entre conceptos
+- **Vulnerabilidad:** debilidad.
+- **Amenaza:** algo/alguien que puede explotar la debilidad.
+- **Impacto:** el golpe que te llevas si pasa.
+- **Riesgo:** qué tan probable es que pase *y* qué tan fuerte pega.
+- **MFA:** un control para reducir riesgo (sobre todo de accesos indebidos).
+- **CIA Triad:** lo que queremos proteger (confidencialidad, integridad, disponibilidad).
+- **Usability Triangle:** el drama eterno: seguridad vs facilidad vs productividad.
+
+---
