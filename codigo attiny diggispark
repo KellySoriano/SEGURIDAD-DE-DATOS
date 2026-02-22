@@ -1,0 +1,48 @@
+#include "DigiKeyboard.h"
+
+void setup() {
+  // No necesita configuración
+}
+
+void loop() {
+  DigiKeyboard.delay(5000);
+
+  // Abrir Ejecutar
+  DigiKeyboard.sendKeyStroke(KEY_R, MOD_GUI_LEFT);
+  DigiKeyboard.delay(1000);
+  
+  // Abrir Chrome
+  DigiKeyboard.print("chrome");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  DigiKeyboard.delay(3000);
+  
+  // Mensaje 1 - pestaña nueva
+  DigiKeyboard.sendKeyStroke(KEY_T, MOD_CONTROL_LEFT);
+  DigiKeyboard.delay(1000);
+  DigiKeyboard.print("Holaaaa, adivina quien soy");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  DigiKeyboard.delay(2000);
+  
+  // Mensaje 2 - pestaña nueva
+  DigiKeyboard.sendKeyStroke(KEY_T, MOD_CONTROL_LEFT);
+  DigiKeyboard.delay(1000);
+  DigiKeyboard.print("Se que estas ahi");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  DigiKeyboard.delay(2000);
+  
+  // Mensaje 3 - pestaña nueva
+  DigiKeyboard.sendKeyStroke(KEY_T, MOD_CONTROL_LEFT);
+  DigiKeyboard.delay(1000);
+  DigiKeyboard.print("no te asustes, esto es inofensivo");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  DigiKeyboard.delay(2000);
+  
+  // Mensaje 4 - pestaña nueva
+  DigiKeyboard.sendKeyStroke(KEY_T, MOD_CONTROL_LEFT);
+  DigiKeyboard.delay(1000);
+  DigiKeyboard.print("o no lo es? cuidado");
+  DigiKeyboard.sendKeyStroke(KEY_ENTER);
+  
+  // Detener el programa
+  for(;;) {}
+}
